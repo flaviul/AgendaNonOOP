@@ -1,8 +1,12 @@
 import java.io.*;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Scanner;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SerializationUtils;
+
+import javax.lang.model.element.Name;
 
 
 /**
@@ -13,13 +17,14 @@ import org.apache.commons.lang3.SerializationUtils;
  */
 public class AgendaAsPrimitiveArray {
 
-    private final static int MAX_AGENDA_ITEMS=4;
+    private final static int MAX_AGENDA_ITEMS = 20;
     private Item[] agenda = new Item[MAX_AGENDA_ITEMS];
     private int currentAgendaIndex;
 
     public static void main(String[] args) {
         System.out.println("AgendaTa versiunea 1.0");
         AgendaAsPrimitiveArray m = new AgendaAsPrimitiveArray();
+        m.readFromFile();
 
         do {
             m.printMenu();
@@ -47,7 +52,14 @@ public class AgendaAsPrimitiveArray {
                     m.writeToFile();
                     break;
                 case 9:
+                    m.sortByName();
+                    m.listAgenda();
+                    break;
+                case 10:
                     m.exitOption();
+                    break;
+                case 11:
+                    m.longestName();
                     break;
                 default:
                     m.defaultOption();
@@ -57,20 +69,59 @@ public class AgendaAsPrimitiveArray {
 
     }
 
+
+    private Comparator<Item> nameComparator = new Comparator<Item>() {
+        @Override
+        public int compare(Item n1, Item n2) {
+            if (n1 == null && n2 == null) {
+                return 0;
+            }
+            if (n1 != null) {
+                return -1;
+            }
+            if (n2 != null) {
+                return 1;
+            }
+
+            return n1.getName().compareTo(n2.getName());
+        }
+    };
+
+    private void longestName() {
+        int maxim = 0;
+        int position = 0;
+        for(int i = 0; i < agenda.length; i++ ){
+            if(agenda[i] != null && agenda[i].getName().length() > maxim ){
+                maxim = agenda[i].getName().length();
+                position = i;
+            }
+        }
+        System.out.println(agenda[position].getName());
+    }
+
+
+
+    private void sortByName(){
+        Arrays.sort(agenda, nameComparator);
+    }
+
     private void createItem() {
         boolean wasInserted = false;
         HandleKeyboard handleKeyboard = new HandleKeyboard().invokeItem();
         String name = handleKeyboard.getName();
+        String firstName = handleKeyboard.getfirstName();
         String phone = handleKeyboard.getPhone();
 
         Item item = new Item();
         item.setName(name);
+        item.setFirstName(firstName);
         item.setPhoneNumber(phone);
 
         if(currentAgendaIndex<MAX_AGENDA_ITEMS) {
             agenda[currentAgendaIndex] = item;
             currentAgendaIndex++;
              wasInserted = true;
+            writeToFile();
         }
         else {
             //try to find null slots and add th item in the first null slot
@@ -97,13 +148,16 @@ public class AgendaAsPrimitiveArray {
         if (indexItem != -1) { //found
             HandleKeyboard handleKeyboard = new HandleKeyboard().invokeItem();
             String name = handleKeyboard.getName(); // so we can change the name as well
+            String firstName = handleKeyboard.getfirstName();
             String phone = handleKeyboard.getPhone();
 
             Item i = new Item();
             i.setName(name);
+            i.setFirstName(firstName);
             i.setPhoneNumber(phone);
             agenda[indexItem] = i;
             System.out.println("Item was updated!");
+            writeToFile();
         } else {
             System.out.println("You cannot update an item that does not exists in agenda!");
         }
@@ -117,6 +171,7 @@ public class AgendaAsPrimitiveArray {
         if (indexItem != -1) { //found
             agenda[indexItem] = null;
             System.out.println("Item was deleted!");
+            writeToFile();
         } else {
             System.out.println("Item not found, so you cannot delete it!");
         }
@@ -150,8 +205,10 @@ public class AgendaAsPrimitiveArray {
         if (index != -1) { //found
             Item item = agenda[index];
             String name = item.getName();
+            String firstName = item.getFirstName();
             String phoneNumber = item.getPhoneNumber();
             System.out.println("Name:" + name);
+            System.out.println("First name:" + firstName);
             System.out.println("Phone Number:" + phoneNumber);
         } else {
             System.out.println("This name does not exists in agenda!");
@@ -167,8 +224,9 @@ public class AgendaAsPrimitiveArray {
         for (Item anAgenda : agenda) {
             if (anAgenda != null) {
                 String name = anAgenda.getName();
+                String firstName = anAgenda.getFirstName();
                 String telephone = anAgenda.getPhoneNumber();
-                System.out.println("Name: "+name + " ;Phone: " + telephone);
+                System.out.println("Name: "+name + " ;First Name" + firstName +  " ;Phone: " + telephone);
             } else {
                 emptySpaces++;
             }
@@ -187,7 +245,9 @@ public class AgendaAsPrimitiveArray {
         System.out.println("6. Read From File");
         System.out.println("7. Write to File");
 
-        System.out.println("9. Exit");
+        System.out.println("9. Sort");
+        System.out.println("10. Exit");
+        System.out.println("11. LongestName");
     }
 
     private void exitOption() {
@@ -257,6 +317,7 @@ public class AgendaAsPrimitiveArray {
 
     private class HandleKeyboard {
         private String name;
+        private String firstName;
         private String phone;
 
         private int option;
@@ -267,6 +328,8 @@ public class AgendaAsPrimitiveArray {
         public String getName() {
             return name;
         }
+
+        public String getfirstName() { return firstName;}
 
         public String getPhone() {
             return phone;
@@ -284,7 +347,9 @@ public class AgendaAsPrimitiveArray {
             Scanner s = new Scanner(System.in);
             System.out.print("Name: ");
             name = s.nextLine();
-            System.out.print("Phone Number: ");
+            System.out.print("FirstName:  ");
+            firstName = s.nextLine();
+            System.out.print("Phone Number:  ");
             phone = s.nextLine();
             return this;
         }
